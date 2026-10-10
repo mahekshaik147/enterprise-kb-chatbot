@@ -8,9 +8,19 @@ MODEL_NAME = "all-MiniLM-L6-v2"
 model = SentenceTransformer(MODEL_NAME)
 collection = chromadb.PersistentClient(path=DB_PATH).get_collection(COLLECTION)
 
-def retrieve(question, k=3):
+ROLE_ACCESS = {
+    "employee": ["all"],
+    "hr": ["all", "hr_only"],
+}
+
+def retrieve(question, k=3, role="employee"):
+    allowed = ROLE_ACCESS[role]
     q_emb = model.encode([question]).tolist()
-    res = collection.query(query_embeddings=q_emb, n_results=k)
+    res = collection.query(
+        query_embeddings=q_emb,
+        n_results=k,
+        where={"access": {"$in": allowed}},
+    )
     results = []
     for doc, meta, dist in zip(res["documents"][0], res["metadatas"][0], res["distances"][0]):
         results.append({"text": doc, "source": meta["source"], "page": meta["page"], "distance": dist})
