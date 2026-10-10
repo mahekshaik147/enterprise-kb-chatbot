@@ -1,3 +1,4 @@
+from langchain_core.documents import Document
 import re
 from pathlib import Path
 from langchain_community.document_loaders import PyPDFLoader
@@ -22,7 +23,14 @@ def split_documents(docs, chunk_size=250, chunk_overlap=40):
         chunk_size=chunk_size,
         chunk_overlap=chunk_overlap,
     )
-    return splitter.split_documents(docs)
+    chunks = []
+    for doc in docs:
+        # split before numbered headings like "2. Leave Policy"
+        sections = re.split(r"\s(?=\d\.\s[A-Z])", doc.page_content)
+        for sec in sections:
+            piece = Document(page_content=sec, metadata=dict(doc.metadata))
+            chunks.extend(splitter.split_documents([piece]))
+    return chunks
 
 if __name__ == "__main__":
     docs = load_documents()
