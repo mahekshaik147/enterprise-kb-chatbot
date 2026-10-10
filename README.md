@@ -22,3 +22,12 @@ Python, LangChain, ChromaDB, sentence-transformers, Gemini API
 - Role-based access control
 - Evaluation metrics (retrieval accuracy, hallucination rate)
 - FastAPI backend, Docker, live demo
+
+## Results (18-question test set, 15 answerable + 3 not in documents)
+| Metric | Score |
+|---|---|
+| Top-1 retrieval accuracy | 14/15 |
+| Top-3 retrieval accuracy | 15/15 |
+
+### Experiment: chunk size
+Chunk size 500 returned the wrong chunk for "How many sick leaves do I get?". Chunk size 250 fixed it.
