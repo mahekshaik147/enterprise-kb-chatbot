@@ -41,10 +41,14 @@ Evaluated on a hand-written test set of 18 questions (15 answerable, 3 not in th
 |---|---|
 | Top-1 retrieval accuracy | 15/15 (after section-aware chunking) |
 | Top-3 retrieval accuracy | 15/15 |
-| Answer accuracy (LLM) | pending |
-| Correct refusals (LLM) | pending |
+| Answer accuracy (LLM) | 11/11 |
+| Correct refusals (LLM) | 4/4 (including employee denied HR-only salary data) |
 
-Caveat: the chunking was tuned using these same questions, so the retrieval numbers are optimistic. A held-out test set is planned.
+Caveats: the test set is small (15 questions) and the chunking was tuned
+on the same questions, so these numbers are optimistic. Answers were
+checked by keyword match. The first 8 questions ran on `gemini-3.8-flash`
+and the remaining 7 on `gemini-3.7-flash` after the free daily quota ran
+out. A larger held-out question set is planned.
 
 ## Experiments and Failure Analysis
 

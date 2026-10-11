@@ -1,0 +1,16 @@
+question,role,retrieved_right_source,correct,answer
+How many sick leaves do I get?,employee,True,True,You get 12 days of sick leave per year [1].
+Can I work from home?,employee,True,True,"Yes, employees may work from home two days per week with manager approval [1]."
+What are the standard working hours?,employee,True,True,"Standard working hours are 9:30 AM to 6:30 PM, Monday to Friday [1]."
+What is the notice period during probation?,employee,True,True,The notice period during probation is 15 days [1].
+What is the notice period after confirmation?,employee,True,True,The notice period after confirmation is 60 days [1].
+How do I reset my password?,employee,True,True,"To reset your password, visit the self-service portal. If you are locked out, email helpdesk@technova.example [1]."
+Is VPN required when working from home?,employee,True,True,"Yes, VPN is mandatory when working from home [1]."
+What is the extension for critical outages?,employee,True,True,The extension for critical outages is 1100 [1].
+How much is the learning budget?,employee,True,True,"The learning budget is 25,000 rupees per year [1]."
+On which day is free lunch provided?,employee,True,True,Free lunch is provided on Wednesdays [1].
+What is the salary of a senior engineer?,hr,True,True,The salary for a Senior Engineer (Level 3) is 13 to 20 lakhs per year [1].
+What is the salary of a senior engineer?,employee,,True,I couldn't find that in the company documents.
+What is the capital of France?,employee,,True,I couldn't find that in the company documents.
+Who is the CEO of TechNova?,employee,,True,I couldn't find that in the company documents.
+What is the company dress code?,employee,,True,I couldn't find that in the company documents.

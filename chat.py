@@ -3,7 +3,7 @@ from langchain_google_genai import ChatGoogleGenerativeAI
 from retrieve import retrieve
 
 load_dotenv()
-llm = ChatGoogleGenerativeAI(model="gemini-3.8-flash", temperature=0)
+llm = ChatGoogleGenerativeAI(model="gemini-3.7-flash", temperature=0, timeout=120, max_retries=2)
 
 PROMPT = """You are a knowledge base assistant for TechNova Solutions.
 Answer the question using ONLY the context below.
