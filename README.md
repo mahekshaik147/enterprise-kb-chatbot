@@ -44,6 +44,12 @@ Evaluated on a hand-written test set of 18 questions (15 answerable, 3 not in th
 | Answer accuracy (LLM) | 11/11 |
 | Correct refusals (LLM) | 4/4 (including employee denied HR-only salary data) |
 
+Held-out retrieval test (10 new answerable questions + 2 negative/access checks,
+written after tuning and never used for tuning): Top-1 10/10, Top-3 10/10.
+No restricted documents leaked to the employee role.
+Caveat: small corpus (4 documents, 16 chunks) and questions written by the
+project author, so real-world accuracy will be lower.
+
 Caveats: the test set is small (15 questions) and the chunking was tuned
 on the same questions, so these numbers are optimistic. Answers were
 checked by keyword match. The first 8 questions ran on `gemini-3.8-flash`
