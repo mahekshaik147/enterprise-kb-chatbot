@@ -75,3 +75,9 @@ def ask(req: AskRequest, role: str = Depends(current_role)):
 @app.get("/health")
 def health():
     return {"status": "ok"}
+
+from fastapi.responses import FileResponse
+
+@app.get("/")
+def home():
+    return FileResponse("index.html")

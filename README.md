@@ -15,6 +15,7 @@ Work in progress. Core pipeline, access control, and retrieval evaluation are do
 - Refuses to answer when the information is not in the documents
 - Role-based access control (`employee` / `hr`) applied inside the vector DB query, so restricted text never reaches the LLM
 - Retrieval evaluation scripts
+- FastAPI backend with login, role taken from the session, answer cache, and clear errors when the AI service is busy or over quota
 
 ## Tech Stack
 Python, ChromaDB, sentence-transformers (`all-MiniLM-L6-v2`), LangChain, Gemini API
@@ -33,6 +34,19 @@ Python, ChromaDB, sentence-transformers (`all-MiniLM-L6-v2`), LangChain, Gemini 
 5. Create a `.env` file containing `GOOGLE_API_KEY=your_key`
 6. Build the index: `python build_index.py`
 7. Run the chatbot: `python chat.py`
+8. Start the API: `uvicorn api:app --reload`, then open http://127.0.0.1:8000/docs
+   Demo logins: `asha` / `employee123` (employee), `ravi` / `hr123` (HR)
+
+## Demo
+The same question, asked by two different roles:
+
+**Employee** is refused (the confidential document is never retrieved):
+
+![Employee refused](docs/employee-refusal.png)
+
+**HR** gets the answer, with the source shown:
+
+![HR answer](docs/hr-answer.png)
 
 ## Results
 Evaluated on a hand-written test set of 18 questions (15 answerable, 3 not in the documents).
@@ -81,6 +95,8 @@ Vector distance cannot reliably detect questions that are not in the documents (
 - FastAPI backend with real login-based roles
 - Docker and a live demo
 - Architecture diagram and demo video
+Limitations: demo users and in-memory sessions only. A production system
+would use hashed passwords, a database, and JWT or SSO.
 
 ## Note
 All company documents are fictional and written for this project.
