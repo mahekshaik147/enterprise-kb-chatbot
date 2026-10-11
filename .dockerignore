@@ -1,0 +1,7 @@
+venv/
+.env
+.git/
+chroma_db/
+__pycache__/
+eval_results.csv
+docs/
