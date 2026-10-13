@@ -1,3 +1,10 @@
+---
+title: TechNova Knowledge Base Chatbot
+emoji: 📚
+sdk: docker
+app_port: 7860
+---
+
 # Enterprise Knowledge Base Chatbot (RAG)
 
 A retrieval-augmented chatbot that answers employee questions from company documents. Every answer cites its source, the bot says "I couldn't find that" when the answer isn't in the documents, and restricted documents are hidden from users without access.
