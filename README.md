@@ -1,9 +1,3 @@
----
-title: TechNova Knowledge Base Chatbot
-emoji: 📚
-sdk: docker
-app_port: 7860
----
 
 # Enterprise Knowledge Base Chatbot (RAG)
 
