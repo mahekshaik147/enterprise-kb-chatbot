@@ -5,121 +5,280 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>TechNova Knowledge Base</title>
 <style>
-  body{font-family:Arial,sans-serif;background:#f3f4f6;margin:0;display:flex;justify-content:center;padding:20px}
-  .box{background:#fff;width:100%;max-width:640px;border-radius:12px;padding:20px;box-shadow:0 2px 8px rgba(0,0,0,.1)}
-  h1{font-size:20px;margin:0 0 12px}
-  input{padding:10px;border:1px solid #ccc;border-radius:8px;font-size:15px}
-  button{padding:10px 16px;border:0;border-radius:8px;background:#2563eb;color:#fff;font-size:15px;cursor:pointer}
-  #login input{display:block;width:calc(100% - 22px);margin-bottom:10px}
-  #chat{display:none}
-  #messages{height:380px;overflow-y:auto;border:1px solid #e5e7eb;border-radius:8px;padding:10px;margin-bottom:10px}
-  .msg{margin:8px 0;padding:8px 12px;border-radius:10px;max-width:85%;white-space:pre-wrap}
-  .user{background:#dbeafe;margin-left:auto}
-  .bot{background:#f3f4f6}
-  .src{font-size:12px;color:#6b7280;margin-top:4px}
-  .row{display:flex;gap:8px}
-  .row input{flex:1}
-  .top{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
-  .top button{background:#6b7280;padding:6px 12px;font-size:13px}
-  #err{color:#b91c1c;font-size:14px;margin-top:8px}
-  .hint{font-size:12px;color:#6b7280;margin-top:10px}
+  *{box-sizing:border-box}
+  body{margin:0;font-family:-apple-system,"Segoe UI",Roboto,Arial,sans-serif;background:#fff;color:#1f2937;height:100vh}
+  button{font-family:inherit;cursor:pointer}
+
+  /* ---------- login ---------- */
+  #loginView{height:100vh;display:flex;align-items:center;justify-content:center;background:#f7f7f8}
+  .login-card{background:#fff;width:100%;max-width:360px;padding:32px;border-radius:16px;box-shadow:0 4px 24px rgba(0,0,0,.08)}
+  .logo{width:44px;height:44px;border-radius:12px;background:#10a37f;color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:20px;margin-bottom:16px}
+  .login-card h1{font-size:22px;margin:0 0 4px}
+  .login-card p{margin:0 0 20px;color:#6b7280;font-size:14px}
+  .login-card input{width:100%;padding:12px;margin-bottom:12px;border:1px solid #d1d5db;border-radius:10px;font-size:15px;outline:none}
+  .login-card input:focus{border-color:#10a37f}
+  .primary{width:100%;padding:12px;border:0;border-radius:10px;background:#10a37f;color:#fff;font-size:15px;font-weight:600}
+  .primary:hover{background:#0e8f70}
+  .hint{margin-top:14px;font-size:12px;color:#6b7280;line-height:1.5}
+  #err{color:#b91c1c;font-size:13px;margin-top:10px;min-height:16px}
+
+  /* ---------- app layout ---------- */
+  #appView{display:none;height:100vh}
+  .app{display:flex;height:100vh}
+  .sidebar{width:260px;background:#171717;color:#ececec;display:flex;flex-direction:column;padding:12px}
+  .brand{display:flex;align-items:center;gap:10px;padding:8px;font-weight:600;margin-bottom:8px}
+  .brand .logo{width:30px;height:30px;font-size:14px;margin:0;border-radius:8px}
+  .newchat{width:100%;text-align:left;padding:10px 12px;border:1px solid #3a3a3a;border-radius:10px;background:transparent;color:#ececec;font-size:14px}
+  .newchat:hover{background:#262626}
+  .spacer{flex:1}
+  .usercard{display:flex;align-items:center;gap:10px;padding:10px;border-top:1px solid #2e2e2e}
+  .avatar{width:34px;height:34px;border-radius:50%;background:#10a37f;color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;text-transform:uppercase}
+  .uinfo{flex:1;min-width:0}
+  .uname{font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .badge{display:inline-block;margin-top:2px;padding:1px 8px;border-radius:999px;font-size:11px;font-weight:600}
+  .badge.employee{background:#1e3a5f;color:#93c5fd}
+  .badge.hr{background:#4c1d95;color:#d8b4fe}
+  .logout{width:100%;margin-top:6px;padding:9px;border:0;border-radius:8px;background:transparent;color:#b3b3b3;text-align:left;font-size:14px}
+  .logout:hover{background:#262626;color:#fff}
+
+  .main{flex:1;display:flex;flex-direction:column;min-width:0}
+  .topbar{padding:14px 20px;border-bottom:1px solid #eee;font-weight:600;color:#374151}
+  .chatarea{flex:1;overflow-y:auto}
+  .inner{max-width:760px;margin:0 auto;padding:20px}
+
+  /* welcome screen */
+  .welcome{text-align:center;padding-top:9vh}
+  .welcome .logo{margin:0 auto 16px;width:52px;height:52px;font-size:24px}
+  .welcome h2{font-size:26px;margin:0 0 6px}
+  .welcome p{color:#6b7280;margin:0 0 24px}
+  .chips{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .chip{padding:14px;border:1px solid #e5e7eb;border-radius:12px;background:#fff;text-align:left;font-size:14px;color:#374151}
+  .chip:hover{background:#f7f7f8}
+
+  /* messages */
+  .row{display:flex;gap:12px;margin:18px 0}
+  .row.user{justify-content:flex-end}
+  .bubble{max-width:85%;white-space:pre-wrap;line-height:1.55;font-size:15px}
+  .row.user .bubble{background:#f1f1f2;padding:10px 16px;border-radius:18px}
+  .row.bot .bubble{padding-top:4px}
+  .bot-avatar{width:30px;height:30px;flex:none;border-radius:8px;background:#10a37f;color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px}
+  .bubble.error{color:#b91c1c}
+  .sources{margin-top:10px;display:flex;flex-wrap:wrap;gap:6px}
+  .src{font-size:12px;padding:3px 10px;border-radius:999px;background:#eef2f7;color:#475569}
+  .dots span{display:inline-block;width:7px;height:7px;margin-right:4px;border-radius:50%;background:#9ca3af;animation:blink 1.2s infinite}
+  .dots span:nth-child(2){animation-delay:.2s}
+  .dots span:nth-child(3){animation-delay:.4s}
+  @keyframes blink{0%,80%,100%{opacity:.2}40%{opacity:1}}
+
+  /* input bar */
+  .inputwrap{padding:12px 20px 20px}
+  .inputbar{max-width:760px;margin:0 auto;display:flex;align-items:center;gap:8px;border:1px solid #d1d5db;border-radius:26px;padding:6px 6px 6px 18px;background:#fff;box-shadow:0 2px 10px rgba(0,0,0,.05)}
+  .inputbar input{flex:1;border:0;outline:none;font-size:15px;padding:10px 0;background:transparent}
+  .send{width:38px;height:38px;border:0;border-radius:50%;background:#10a37f;color:#fff;font-size:18px}
+  .send:disabled{background:#d1d5db;cursor:default}
+  .foot{text-align:center;font-size:12px;color:#9ca3af;margin-top:8px}
+
+  @media (max-width:700px){
+    .app{flex-direction:column}
+    .sidebar{width:100%;flex-direction:row;align-items:center;gap:8px;padding:8px}
+    .brand{display:none}
+    .newchat{width:auto}
+    .usercard{border:0;padding:0}
+    .logout{width:auto;margin:0}
+    .chips{grid-template-columns:1fr}
+  }
 </style>
 </head>
 <body>
-<div class="box">
-  <h1>TechNova Knowledge Base Assistant</h1>
 
-  <div id="login">
-    <input id="username" placeholder="Username">
-    <input id="password" type="password" placeholder="Password">
-    <button onclick="login()">Log in</button>
-    <div class="hint">Demo logins: asha / employee123 (employee), ravi / hr123 (HR)</div>
+<!-- login -->
+<div id="loginView">
+  <div class="login-card">
+    <div class="logo">T</div>
+    <h1>TechNova Assistant</h1>
+    <p>Sign in to ask questions about company policies.</p>
+    <input id="username" placeholder="Username" autocomplete="username">
+    <input id="password" type="password" placeholder="Password" autocomplete="current-password"
+           onkeydown="if(event.key==='Enter')login()">
+    <button class="primary" onclick="login()">Sign in</button>
+    <div id="err"></div>
+    <div class="hint">Sign in with your assigned account credentials.</div>
   </div>
+</div>
 
-  <div id="chat">
-    <div class="top">
-      <span id="who"></span>
-      <button onclick="logout()">Log out</button>
-    </div>
-    <div id="messages"></div>
-    <div class="row">
-      <input id="question" placeholder="Ask a question about company policies..." onkeydown="if(event.key==='Enter')ask()">
-      <button id="sendBtn" onclick="ask()">Send</button>
-    </div>
+<!-- app -->
+<div id="appView">
+  <div class="app">
+    <aside class="sidebar">
+      <div class="brand"><div class="logo">T</div>TechNova</div>
+      <button class="newchat" onclick="newChat()">+ New chat</button>
+      <div class="spacer"></div>
+      <div class="usercard">
+        <div class="avatar" id="avatar"></div>
+        <div class="uinfo">
+          <div class="uname" id="uname"></div>
+          <span class="badge" id="badge"></span>
+        </div>
+      </div>
+      <button class="logout" onclick="logout()">Log out</button>
+    </aside>
+
+    <section class="main">
+      <div class="topbar">Knowledge Base Assistant</div>
+      <div class="chatarea" id="chatarea"><div class="inner" id="chat"></div></div>
+      <div class="inputwrap">
+        <div class="inputbar">
+          <input id="question" placeholder="Ask about company policies..."
+                 onkeydown="if(event.key==='Enter')ask()">
+          <button class="send" id="sendBtn" onclick="ask()">&#8593;</button>
+        </div>
+        <div class="foot">Answers come only from company documents and show their sources.</div>
+      </div>
+    </section>
   </div>
-
-  <div id="err"></div>
 </div>
 
 <script>
-let token = "";
+let token = "", role = "", username = "";
 
-function show(id, on){ document.getElementById(id).style.display = on ? "block" : "none"; }
-function setErr(t){ document.getElementById("err").textContent = t || ""; }
+const SUGGESTIONS = {
+  employee: ["How many sick leaves do I get?", "Can I work from home?",
+             "How do I reset my password?", "How much is the learning budget?"],
+  hr: ["What is the salary of a senior engineer?", "How many sick leaves do I get?",
+       "What is the notice period after confirmation?", "Is VPN required when working from home?"]
+};
+
+const $ = id => document.getElementById(id);
 
 async function login(){
-  setErr("");
-  const res = await fetch("/login", {
-    method: "POST",
-    headers: {"Content-Type": "application/json"},
-    body: JSON.stringify({
-      username: document.getElementById("username").value,
-      password: document.getElementById("password").value
-    })
-  });
-  const data = await res.json();
-  if(!res.ok){ setErr(data.detail || "Login failed"); return; }
-  token = data.token;
-  document.getElementById("who").textContent = "Logged in as role: " + data.role;
-  document.getElementById("messages").innerHTML = "";
-  show("login", false);
-  show("chat", true);
+  $("err").textContent = "";
+  try{
+    const res = await fetch("/login", {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({username: $("username").value.trim(), password: $("password").value})
+    });
+    const data = await res.json();
+    if(!res.ok){ $("err").textContent = data.detail || "Login failed"; return; }
+    token = data.token; role = data.role; username = $("username").value.trim();
+    $("avatar").textContent = username.charAt(0);
+    $("uname").textContent = username;
+    $("badge").textContent = role === "hr" ? "HR" : "Employee";
+    $("badge").className = "badge " + role;
+    $("password").value = "";
+    $("loginView").style.display = "none";
+    $("appView").style.display = "block";
+    newChat();
+  }catch(e){ $("err").textContent = "Could not reach the server."; }
 }
 
 function logout(){
-  token = "";
-  show("chat", false);
-  show("login", true);
-  setErr("");
+  token = ""; role = ""; username = "";
+  $("appView").style.display = "none";
+  $("loginView").style.display = "flex";
+  $("err").textContent = "";
 }
 
-function addMessage(text, cls, sources){
-  const div = document.createElement("div");
-  div.className = "msg " + cls;
-  div.textContent = text;
+function newChat(){
+  const chat = $("chat");
+  chat.innerHTML = "";
+  const w = document.createElement("div");
+  w.className = "welcome";
+  w.id = "welcome";
+  w.innerHTML = '<div class="logo">T</div><h2></h2><p>Ask me anything about TechNova policies.</p><div class="chips"></div>';
+  w.querySelector("h2").textContent = "Hi " + username + ", how can I help?";
+  const chips = w.querySelector(".chips");
+  (SUGGESTIONS[role] || []).forEach(q => {
+    const b = document.createElement("button");
+    b.className = "chip";
+    b.textContent = q;
+    b.onclick = () => { $("question").value = q; ask(); };
+    chips.appendChild(b);
+  });
+  chat.appendChild(w);
+  $("question").focus();
+}
+
+function scrollDown(){ const a = $("chatarea"); a.scrollTop = a.scrollHeight; }
+
+function addUser(text){
+  const row = document.createElement("div");
+  row.className = "row user";
+  const b = document.createElement("div");
+  b.className = "bubble";
+  b.textContent = text;
+  row.appendChild(b);
+  $("chat").appendChild(row);
+  scrollDown();
+}
+
+function addBot(text, sources, isError){
+  const row = document.createElement("div");
+  row.className = "row bot";
+  const av = document.createElement("div");
+  av.className = "bot-avatar";
+  av.textContent = "T";
+  const b = document.createElement("div");
+  b.className = "bubble" + (isError ? " error" : "");
+  b.textContent = text;
   if(sources && sources.length){
     const s = document.createElement("div");
-    s.className = "src";
-    s.textContent = "Sources: " + sources.map(x => x.file + " (p." + x.page + ")").join(", ");
-    div.appendChild(s);
+    s.className = "sources";
+    const seen = new Set();
+    sources.forEach(x => {
+      const label = x.file + " \u00b7 p." + x.page;
+      if(seen.has(label)) return;
+      seen.add(label);
+      const c = document.createElement("span");
+      c.className = "src";
+      c.textContent = label;
+      s.appendChild(c);
+    });
+    b.appendChild(s);
   }
-  const box = document.getElementById("messages");
-  box.appendChild(div);
-  box.scrollTop = box.scrollHeight;
+  row.appendChild(av);
+  row.appendChild(b);
+  $("chat").appendChild(row);
+  scrollDown();
+  return row;
+}
+
+function addTyping(){
+  const row = document.createElement("div");
+  row.className = "row bot";
+  row.innerHTML = '<div class="bot-avatar">T</div><div class="bubble"><div class="dots"><span></span><span></span><span></span></div></div>';
+  $("chat").appendChild(row);
+  scrollDown();
+  return row;
 }
 
 async function ask(){
-  const input = document.getElementById("question");
+  const input = $("question");
   const q = input.value.trim();
   if(!q) return;
   input.value = "";
-  setErr("");
-  addMessage(q, "user");
-  const btn = document.getElementById("sendBtn");
-  btn.disabled = true;
-  try {
+  const w = $("welcome");
+  if(w) w.remove();
+  addUser(q);
+  $("sendBtn").disabled = true;
+  const typing = addTyping();
+  try{
     const res = await fetch("/ask", {
       method: "POST",
       headers: {"Content-Type": "application/json", "Authorization": "Bearer " + token},
       body: JSON.stringify({question: q})
     });
     const data = await res.json();
-    if(!res.ok){ addMessage(data.detail || "Something went wrong", "bot"); }
-    else { addMessage(data.answer, "bot", data.sources); }
-  } catch(e){
-    addMessage("Could not reach the server.", "bot");
+    typing.remove();
+    if(res.status === 401){ addBot("Your session expired. Please log in again.", null, true); }
+    else if(!res.ok){ addBot(data.detail || "Something went wrong.", null, true); }
+    else { addBot(data.answer, data.sources, false); }
+  }catch(e){
+    typing.remove();
+    addBot("Could not reach the server.", null, true);
   }
-  btn.disabled = false;
+  $("sendBtn").disabled = false;
+  input.focus();
 }
 </script>
 </body>

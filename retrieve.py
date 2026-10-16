@@ -10,6 +10,9 @@ model = SentenceTransformer(MODEL_NAME)
 reranker = CrossEncoder(RERANK_MODEL)
 collection = chromadb.PersistentClient(path=DB_PATH).get_collection(COLLECTION)
 
+if role not in ROLE_ACCESS:
+    raise ValueError("Invalid role")
+
 ROLE_ACCESS = {
     "employee": ["all"],
     "hr": ["all", "hr_only"],
