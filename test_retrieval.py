@@ -9,7 +9,13 @@ questions = [
 ]
 
 for q in questions:
-    top = retrieve(q, k=1)[0]
+    results = retrieve(q, k=1)
     print(f"\nQ: {q}")
+
+    if not results:
+        print("   No relevant passage found (relevance cutoff)")
+        continue
+
+    top = results[0]
     print(f"   Top: {top['source']} | distance {top['distance']:.3f}")
     print(f"   {top['text'][:200]}")
