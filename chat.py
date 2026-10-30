@@ -11,8 +11,7 @@ logger = logging.getLogger(__name__)
 load_dotenv()
 
 llm = ChatGoogleGenerativeAI(
-    model="gemini-3.7-flash",
-    temperature=0,
+   model="gemini-3.8-flash",
     timeout=120,
     max_retries=2,
 )

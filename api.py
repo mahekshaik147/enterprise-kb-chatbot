@@ -1,4 +1,4 @@
-
+import logging
 import re
 import secrets
 import time
@@ -6,11 +6,15 @@ import time
 from fastapi import FastAPI, HTTPException, Depends
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from fastapi.responses import FileResponse
+
 from pydantic import BaseModel
 
 from chat import answer
 
+logger = logging.getLogger(__name__)
+
 app = FastAPI(title="TechNova Knowledge Base Chatbot")
+
 bearer = HTTPBearer()
 
 # Demo users only. Do not use these credentials for real company data.
@@ -58,6 +62,7 @@ def current_role(
     return role
 
 
+
 def ask_with_retry(question, role, tries=3):
     for attempt in range(tries):
         try:
@@ -65,6 +70,20 @@ def ask_with_retry(question, role, tries=3):
 
         except Exception as e:
             msg = str(e)
+
+            safe_msg = re.sub(
+                r"(?i)(api[_ -]?key|access[_ -]?token)(\s*[:=]\s*)\S+",
+                r"\1\2[REDACTED]",
+                msg,
+            )
+
+            logger.error(
+                "AI request failed on attempt %s: %s: %s",
+                attempt + 1,
+                type(e).__name__,
+                safe_msg[:500],
+            )
+
 
             if "429" in msg or "RESOURCE_EXHAUSTED" in msg:
                 raise HTTPException(

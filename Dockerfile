@@ -1,3 +1,4 @@
+
 FROM python:3.13-slim
 
 WORKDIR /app
@@ -7,8 +8,9 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY . .
 
-# build the vector index inside the image
+# Build the vector index inside the image
 RUN python build_index.py
 
-EXPOSE 7860
-CMD ["uvicorn", "api:app", "--host", "0.0.0.0", "--port", "7860"]
+EXPOSE 10000
+
+CMD ["sh", "-c", "uvicorn api:app --host 0.0.0.0 --port ${PORT:-10000}"]

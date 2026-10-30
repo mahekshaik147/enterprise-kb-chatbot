@@ -1204,6 +1204,7 @@
 </div>
 
 <script>
+const API_BASE_URL = "";
 let token = "", role = "", username = "";
 let conversationList = [];
 let activeConversationId = null;
@@ -1491,7 +1492,7 @@ function returnToLogin(message){
 async function login(){
   $("err").textContent = "";
   try{
-    const res = await fetch("/login", {
+    const res = await fetch(`${API_BASE_URL}/login`, {
       method: "POST",
       headers: {"Content-Type": "application/json"},
       body: JSON.stringify({username: $("username").value.trim(), password: $("password").value})
@@ -1552,7 +1553,7 @@ async function ask(){
   $("sendBtn").disabled = true;
   const typing = addTyping();
   try{
-    const res = await fetch("/ask", {
+    const res = await fetch(`${API_BASE_URL}/ask`, {
       method: "POST",
       headers: {"Content-Type": "application/json", "Authorization": "Bearer " + token},
       body: JSON.stringify({question: q})
