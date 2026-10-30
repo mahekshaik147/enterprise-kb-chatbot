@@ -9,7 +9,6 @@ from fastapi.responses import FileResponse
 
 from pydantic import BaseModel
 
-from chat import answer
 
 logger = logging.getLogger(__name__)
 
@@ -64,6 +63,7 @@ def current_role(
 
 
 def ask_with_retry(question, role, tries=3):
+    from chat import answer
     for attempt in range(tries):
         try:
             return answer(question, role=role)
