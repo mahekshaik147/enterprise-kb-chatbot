@@ -1,4 +1,5 @@
 import logging
+import os
 import re
 import secrets
 import time
@@ -16,11 +17,12 @@ app = FastAPI(title="TechNova Knowledge Base Chatbot")
 
 bearer = HTTPBearer()
 
-# Demo users only. Do not use these credentials for real company data.
-USERS = {
-    "asha": {"password": "employee123", "role": "employee"},
-    "ravi": {"password": "hr123", "role": "hr"},
-}
+AUTH_ENV_VARS = (
+    "TECHNOVA_EMPLOYEE_USERNAME",
+    "TECHNOVA_EMPLOYEE_PASSWORD",
+    "TECHNOVA_HR_USERNAME",
+    "TECHNOVA_HR_PASSWORD",
+)
 
 SESSIONS = {}  # token -> role
 CACHE = {}     # (role, question) -> response
@@ -61,6 +63,27 @@ def current_role(
     return role
 
 
+def _configured_users():
+    """Return configured role credentials, or None if configuration is unsafe."""
+    values = {name: os.environ.get(name) for name in AUTH_ENV_VARS}
+    if any(value is None or not value.strip() for value in values.values()):
+        return None
+
+    employee_username = values["TECHNOVA_EMPLOYEE_USERNAME"]
+    hr_username = values["TECHNOVA_HR_USERNAME"]
+    if employee_username == hr_username:
+        return None
+
+    return {
+        employee_username: {
+            "password": values["TECHNOVA_EMPLOYEE_PASSWORD"],
+            "role": "employee",
+        },
+        hr_username: {
+            "password": values["TECHNOVA_HR_PASSWORD"],
+            "role": "hr",
+        },
+    }
 
 def ask_with_retry(question, role, tries=3):
     from chat import answer
@@ -139,7 +162,14 @@ def get_cited_sources(reply, chunks):
 
 @app.post("/login")
 def login(req: LoginRequest):
-    user = USERS.get(req.username)
+    users = _configured_users()
+    if users is None:
+        raise HTTPException(
+            status_code=503,
+            detail="Authentication is not configured.",
+        )
+
+    user = users.get(req.username)
 
     if not user or user["password"] != req.password:
         raise HTTPException(
