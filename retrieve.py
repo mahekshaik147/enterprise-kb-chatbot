@@ -1,25 +1,36 @@
 
 import logging
+import os
+import threading
 import time
 
 import chromadb
-from sentence_transformers import SentenceTransformer, CrossEncoder
+import numpy as np
+import onnxruntime as ort
 
 logger = logging.getLogger(__name__)
 
 DB_PATH = "chroma_db"
 COLLECTION = "technova_kb"
 
-MODEL_NAME = "all-MiniLM-L6-v2"
+MODEL_NAME = "sentence-transformers/all-MiniLM-L6-v2"
 RERANK_MODEL = "cross-encoder/ms-marco-MiniLM-L-6-v2"
 
-# Models are loaded only when required.
-model = None
-reranker = None
+# ONNX model and tokenizer locations, matching what the official
+# sentence-transformers/all-MiniLM-L6-v2 repo ships.
+ONNX_MODEL_FILE = "onnx/model.onnx"
+MAX_SEQ_LENGTH = 256   # same truncation length SentenceTransformer used
 
-collection = chromadb.PersistentClient(
-    path=DB_PATH
-).get_collection(COLLECTION)
+# Models are loaded only when required.
+_tokenizer = None
+_session = None
+_reranker = None
+_rerank_tokenizer = None
+_embedding_init_lock = threading.Lock()
+
+# Keep one client alive for this process and reuse its collection handle.
+_chroma_client = chromadb.PersistentClient(path=DB_PATH)
+collection = _chroma_client.get_collection(COLLECTION)
 
 ROLE_ACCESS = {
     "employee": ["all"],
@@ -33,22 +44,102 @@ ROLE_ACCESS = {
 MAX_DISTANCE = 1.45
 
 
+def _get_tokenizer():
+    """Load the tokenizer that ships with all-MiniLM-L6-v2 (BERT wordpiece)."""
+    global _tokenizer
+    if _tokenizer is None:
+        with _embedding_init_lock:
+            if _tokenizer is None:
+                from transformers import AutoTokenizer
+                _tokenizer = AutoTokenizer.from_pretrained(MODEL_NAME)
+    return _tokenizer
+
+
+def _get_onnx_session():
+    """Load the official all-MiniLM-L6-v2 ONNX model, CPU only."""
+    global _session
+    if _session is None:
+        with _embedding_init_lock:
+            if _session is None:
+                from huggingface_hub import hf_hub_download
+                model_path = hf_hub_download(MODEL_NAME, ONNX_MODEL_FILE)
+                so = ort.SessionOptions()
+                so.intra_op_num_threads = 1
+                so.inter_op_num_threads = 1
+                so.execution_mode = ort.ExecutionMode.ORT_SEQUENTIAL
+                so.enable_cpu_mem_arena = False
+                so.enable_mem_pattern = False
+                so.graph_optimization_level = ort.GraphOptimizationLevel.ORT_ENABLE_BASIC
+                _session = ort.InferenceSession(
+                    model_path,
+                    sess_options=so,
+                    providers=["CPUExecutionProvider"],
+                )
+    return _session
+
+
+def encode_question(text):
+    """Encode a question with the ONNX pipeline.
+
+    Replicates the SentenceTransformer pipeline exactly:
+    BERT wordpiece tokenizer (truncation 256, padding)
+    -> forward pass
+    -> mean pooling over token embeddings using the attention mask
+    -> L2 normalization.
+    """
+    tokenizer = _get_tokenizer()
+    session = _get_onnx_session()
+
+    enc = tokenizer(
+        [text],
+        padding=True,
+        truncation=True,
+        max_length=MAX_SEQ_LENGTH,
+        return_tensors="np",
+    )
+
+    feed = {
+        "input_ids": enc["input_ids"].astype(np.int64),
+        "attention_mask": enc["attention_mask"].astype(np.int64),
+        "token_type_ids": enc["token_type_ids"].astype(np.int64),
+    }
+
+    out = session.run(None, feed)
+    hidden = out[0]  # (batch, seq_len, 384)
+
+    # Mean pooling over real (non-padding) tokens.
+    mask = enc["attention_mask"][:, :, None].astype(np.float32)
+    summed = (hidden.astype(np.float32, copy=False) * mask).sum(axis=1)
+    counts = np.clip(mask.sum(axis=1), 1e-9, None)
+    mean = summed / counts
+
+    # L2 normalize.
+    norm = np.linalg.norm(mean, axis=1, keepdims=True)
+    norm = np.clip(norm, 1e-12, None)
+    emb = mean / norm
+
+    return emb
+
+
 def get_embedding_model():
-    global model
-
-    if model is None:
-        model = SentenceTransformer(MODEL_NAME)
-
-    return model
+    """Backwards-compatible hook: triggers ONNX session + tokenizer load."""
+    _get_tokenizer()
+    _get_onnx_session()
+    return True
 
 
 def get_reranker():
-    global reranker
+    """Development-only reranker.
 
-    if reranker is None:
-        reranker = CrossEncoder(RERANK_MODEL)
-
-    return reranker
+    Uses PyTorch via sentence-transformers and is only imported when
+    rerank=True is explicitly requested. Production /ask never sets this
+    flag, so PyTorch is not loaded in the normal retrieval path.
+    """
+    global _reranker
+    if _reranker is None:
+        from sentence_transformers import CrossEncoder
+        _reranker = CrossEncoder(RERANK_MODEL)
+    return _reranker
 
 
 def retrieve(
@@ -69,11 +160,8 @@ def retrieve(
     allowed = ROLE_ACCESS[role]
     retrieval_started = time.perf_counter()
 
-    embedding_model = get_embedding_model()
-    q_emb = embedding_model.encode(
-        [question],
-        convert_to_numpy=True,
-    ).tolist()
+    embedding = encode_question(question)
+    q_emb = embedding.tolist()
 
     res = collection.query(
         query_embeddings=q_emb,

@@ -2,13 +2,15 @@ import logging
 import os
 import re
 import secrets
+import sys
+import threading
 import time
 
 from fastapi import FastAPI, HTTPException, Depends
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from fastapi.responses import FileResponse
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 
 logger = logging.getLogger(__name__)
@@ -26,16 +28,72 @@ AUTH_ENV_VARS = (
 
 SESSIONS = {}  # token -> role
 CACHE = {}     # (role, question) -> response
+_cache_sizes = {}
+_cache_bytes = 0
+_session_lock = threading.Lock()
+_cache_lock = threading.Lock()
+_ask_semaphore = threading.BoundedSemaphore(value=1)
 
-# Bound the response cache so it cannot grow without limit
-# (a memory-leak / DoS vector on small free-tier hosts).
-CACHE_MAX_ENTRIES = 500
+# Bound retained state and expensive concurrent work for the Render Free tier.
+CACHE_MAX_ENTRIES = 100
+CACHE_MAX_ENTRY_BYTES = 32 * 1024
+CACHE_MAX_BYTES = 1024 * 1024
+SESSION_MAX_ENTRIES = 1000
+
+
+def _object_size(value, seen=None):
+    """Estimate retained Python object memory for the cache's plain data."""
+    if seen is None:
+        seen = set()
+    identity = id(value)
+    if identity in seen:
+        return 0
+    seen.add(identity)
+
+    size = sys.getsizeof(value)
+    if isinstance(value, dict):
+        size += sum(
+            _object_size(key, seen) + _object_size(item, seen)
+            for key, item in value.items()
+        )
+    elif isinstance(value, (list, tuple)):
+        size += sum(_object_size(item, seen) for item in value)
+    return size
 
 
 def cache_put(key, value):
-    while len(CACHE) >= CACHE_MAX_ENTRIES:
-        CACHE.pop(next(iter(CACHE)))  # FIFO eviction
-    CACHE[key] = value
+    global _cache_bytes
+    entry_size = _object_size(key) + _object_size(value)
+
+    if entry_size > CACHE_MAX_ENTRY_BYTES:
+        return
+
+    with _cache_lock:
+        if key in CACHE:
+            del CACHE[key]
+            _cache_bytes -= _cache_sizes.pop(key)
+        while CACHE and (
+            len(CACHE) >= CACHE_MAX_ENTRIES
+            or _cache_bytes + entry_size > CACHE_MAX_BYTES
+        ):
+            oldest = next(iter(CACHE))
+            CACHE.pop(oldest)  # FIFO eviction
+            _cache_bytes -= _cache_sizes.pop(oldest)
+        CACHE[key] = value
+        _cache_sizes[key] = entry_size
+        _cache_bytes += entry_size
+
+
+def cache_get(key):
+    with _cache_lock:
+        return CACHE.get(key)
+
+
+def _store_session(token, role):
+    with _session_lock:
+        while len(SESSIONS) >= SESSION_MAX_ENTRIES:
+            SESSIONS.pop(next(iter(SESSIONS)))  # FIFO eviction
+        SESSIONS[token] = role
 
 BUSY_ERRORS = ["503", "504", "UNAVAILABLE", "DEADLINE"]
 
@@ -46,13 +104,14 @@ class LoginRequest(BaseModel):
 
 
 class AskRequest(BaseModel):
-    question: str
+    question: str = Field(max_length=4000)
 
 
 def current_role(
     creds: HTTPAuthorizationCredentials = Depends(bearer),
 ):
-    role = SESSIONS.get(creds.credentials)
+    with _session_lock:
+        role = SESSIONS.get(creds.credentials)
 
     if role is None:
         raise HTTPException(
@@ -178,7 +237,7 @@ def login(req: LoginRequest):
         )
 
     token = secrets.token_hex(16)
-    SESSIONS[token] = user["role"]
+    _store_session(token, user["role"])
 
     return {
         "token": token,
@@ -198,19 +257,28 @@ def ask(req: AskRequest, role: str = Depends(current_role)):
 
     key = (role, question.lower())
 
-    if key in CACHE:
-        return {**CACHE[key], "cached": True}
+    cached = cache_get(key)
+    if cached is not None:
+        return {**cached, "cached": True}
 
-    reply, chunks = ask_with_retry(question, role)
+    if not _ask_semaphore.acquire(blocking=False):
+        raise HTTPException(
+            status_code=503,
+            detail="The chatbot is busy. Please try again shortly.",
+        )
 
-    result = {
-        "answer": reply,
-        "sources": get_cited_sources(reply, chunks),
-    }
+    try:
+        reply, chunks = ask_with_retry(question, role)
 
-    cache_put(key, result)
+        result = {
+            "answer": reply,
+            "sources": get_cited_sources(reply, chunks),
+        }
+        cache_put(key, result)
 
-    return {**result, "cached": False}
+        return {**result, "cached": False}
+    finally:
+        _ask_semaphore.release()
 
 
 @app.get("/health")

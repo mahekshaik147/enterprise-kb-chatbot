@@ -1567,12 +1567,14 @@ async function ask(){
     }
 
     if (!res.ok) {
+      if (!input.value.trim()) input.value = q;
       addBot(data.detail || "Something went wrong.", null, true);
       return;
     }
 
     addBot(data.answer, data.sources, false);
   }catch(e){
+    if (!input.value.trim()) input.value = q;
     addBot("Could not reach the server. Please try again.", null, true);
   } finally {
     isSubmitting = false;
