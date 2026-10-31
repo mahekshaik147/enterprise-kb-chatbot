@@ -1403,7 +1403,14 @@ function renderConversation(conv){
   scrollDown();
 }
 
-function scrollDown(){ const a = $("chatarea"); a.scrollTop = a.scrollHeight; }
+function scrollDown(){
+  try {
+    const a = $("chatarea");
+    if (a) a.scrollTop = a.scrollHeight;
+  } catch (e) {
+    // Scrolling is optional and must not interrupt sending a message.
+  }
+}
 
 function addUser(text){
   const current = getActiveConversation();
@@ -1541,18 +1548,22 @@ async function ask(){
     return;
   }
 
-  if (!activeConversationId) {
-    newChat();
-  }
-
   isSubmitting = true;
-  input.value = "";
-  const w = $("welcome");
-  if(w) w.remove();
-  addUser(q);
-  $("sendBtn").disabled = true;
-  const typing = addTyping();
+  let typing = null;
+  let sendButton = null;
   try{
+    sendButton = $("sendBtn");
+    if (!activeConversationId) {
+      newChat();
+    }
+
+    input.value = "";
+    const w = $("welcome");
+    if(w) w.remove();
+    addUser(q);
+    if (sendButton) sendButton.disabled = true;
+    typing = addTyping();
+
     const res = await fetch(`${API_BASE_URL}/ask`, {
       method: "POST",
       headers: {"Content-Type": "application/json", "Authorization": "Bearer " + token},
@@ -1578,9 +1589,9 @@ async function ask(){
     addBot("Could not reach the server. Please try again.", null, true);
   } finally {
     isSubmitting = false;
-    removeTypingIndicator(typing);
-    $("sendBtn").disabled = false;
-    input.focus();
+    if (sendButton) sendButton.disabled = false;
+    try { removeTypingIndicator(typing); } catch (e) {}
+    try { input.focus(); } catch (e) {}
   }
 }
 
