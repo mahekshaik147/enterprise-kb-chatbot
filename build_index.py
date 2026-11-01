@@ -1,17 +1,21 @@
 import chromadb
-from sentence_transformers import SentenceTransformer
 from ingest import load_documents, split_documents
+import retrieve
 
 DB_PATH = "chroma_db"
 COLLECTION = "technova_kb"
-MODEL_NAME = "all-MiniLM-L6-v2"
+
 
 def build_index():
     chunks = split_documents(load_documents())
     texts = [c.page_content for c in chunks]
 
-    model = SentenceTransformer(MODEL_NAME)
-    embeddings = model.encode(texts).tolist()
+    # ONNX embedding pipeline (same tokenizer, mean pooling, L2
+    # normalization, and 256-token truncation as retrieve.py).
+    retrieve.get_embedding_model()
+    embeddings = []
+    for text in texts:
+        embeddings.append(retrieve.encode_question(text)[0].tolist())
 
     client = chromadb.PersistentClient(path=DB_PATH)
     try:
