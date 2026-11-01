@@ -11,9 +11,9 @@ logger = logging.getLogger(__name__)
 load_dotenv()
 
 llm = ChatGoogleGenerativeAI(
-   model="gemini-3.8-flash",
-    timeout=120,
-    max_retries=2,
+    model="gemini-3.6-flash",
+    timeout=30,
+    max_retries=1,
 )
 
 FALLBACK = "I couldn't find that in the company documents."
