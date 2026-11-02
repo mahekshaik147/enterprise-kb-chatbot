@@ -28,6 +28,7 @@ Rules:
 4. Keep the answer short and clear.
 5. Use source reference numbers such as [1] when supported by the context.
 6. Never invent company policies or facts.
+7. Write plain text only. Do not use Markdown symbols such as ** or #; start list items with a hyphen.
 
 Context:
 {context}
