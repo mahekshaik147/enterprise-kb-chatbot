@@ -1525,6 +1525,7 @@ async function login(){
 }
 
 function logout(){
+  const tokenToRevoke = token;
   token = ""; role = ""; username = "";
   conversationList = [];
   activeConversationId = null;
@@ -1534,6 +1535,13 @@ function logout(){
   $("appView").style.display = "none";
   $("loginView").style.display = "flex";
   $("err").textContent = "";
+  if (tokenToRevoke) {
+    fetch(`${API_BASE_URL}/logout`, {
+      method: "POST",
+      headers: {"Authorization": "Bearer " + tokenToRevoke},
+      keepalive: true
+    }).catch(() => {});
+  }
 }
 
 async function ask(){

@@ -5,6 +5,7 @@ import secrets
 import sys
 import threading
 import time
+from dotenv import load_dotenv
 
 from fastapi import FastAPI, HTTPException, Depends
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
@@ -12,6 +13,7 @@ from fastapi.responses import FileResponse
 
 from pydantic import BaseModel, Field
 
+load_dotenv()
 
 logger = logging.getLogger(__name__)
 
@@ -243,6 +245,17 @@ def login(req: LoginRequest):
         "token": token,
         "role": user["role"],
     }
+
+
+@app.post("/logout")
+def logout(
+    creds: HTTPAuthorizationCredentials = Depends(bearer),
+    role: str = Depends(current_role),
+):
+    # Revoke the bearer token on the server, not only in the browser.
+    with _session_lock:
+        SESSIONS.pop(creds.credentials, None)
+    return {"status": "ok"}
 
 
 @app.post("/ask")

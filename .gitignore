@@ -2,3 +2,6 @@ venv/
 .env
 chroma_db/
 __pycache__/
+# Environment-specific configuration; keep only the documented template
+.env.*
+!.env.example

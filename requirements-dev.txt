@@ -1,0 +1,8 @@
+# Development and test dependencies. Not installed in production.
+-r requirements.txt
+pytest==9.2.0
+torch==2.14.1
+sentence-transformers==6.1.0
+# scikit-learn, scipy, joblib, narwhals, threadpoolctl, cloudpickle,
+# sympy, networkx, mpmath, Jinja2, fsspec resolve transitively
+# via torch / sentence-transformers.

@@ -115,6 +115,24 @@ def test_hr_login_returns_hr_session():
     assert res.json()["token"]
 
 
+def test_logout_revokes_bearer_token():
+    client = TestClient(api.app)
+    login = client.post(
+        "/login",
+        json={
+            "username": "employee-test-user",
+            "password": "employee-test-password",
+        },
+    )
+    token = login.json()["token"]
+    headers = {"Authorization": f"Bearer {token}"}
+
+    logout = client.post("/logout", headers=headers)
+
+    assert logout.status_code == 200
+    assert client.post("/ask", json={"question": "x"}, headers=headers).status_code == 401
+
+
 def test_login_fails_safely_when_auth_configuration_is_missing(monkeypatch):
     monkeypatch.delenv("TECHNOVA_HR_PASSWORD")
     client = TestClient(api.app)
@@ -269,3 +287,70 @@ def test_health_is_open_but_ask_is_not():
 
     assert client.get("/health").status_code == 200
     assert client.post("/ask", json={"question": "x"}).status_code == 401
+
+def test_employee_ask_uses_employee_role(monkeypatch):
+    observed_roles = []
+
+    def fake_ask_with_retry(question, role, tries=3):
+        observed_roles.append(role)
+        return "Mocked employee response", []
+
+    monkeypatch.setattr(api, "ask_with_retry", fake_ask_with_retry)
+    monkeypatch.setattr(api, "cache_get", lambda key: None)
+    monkeypatch.setattr(api, "cache_put", lambda key, value: None)
+
+    client = TestClient(api.app)
+
+    login = client.post(
+        "/login",
+        json={
+            "username": "employee-test-user",
+            "password": "employee-test-password",
+        },
+    )
+    assert login.status_code == 200
+
+    response = client.post(
+        "/ask",
+        json={"question": "Employee role propagation test"},
+        headers={
+            "Authorization": f"Bearer {login.json()['token']}"
+        },
+    )
+
+    assert response.status_code == 200
+    assert observed_roles == ["employee"]
+
+
+def test_hr_ask_uses_hr_role(monkeypatch):
+    observed_roles = []
+
+    def fake_ask_with_retry(question, role, tries=3):
+        observed_roles.append(role)
+        return "Mocked HR response", []
+
+    monkeypatch.setattr(api, "ask_with_retry", fake_ask_with_retry)
+    monkeypatch.setattr(api, "cache_get", lambda key: None)
+    monkeypatch.setattr(api, "cache_put", lambda key, value: None)
+
+    client = TestClient(api.app)
+
+    login = client.post(
+        "/login",
+        json={
+            "username": "hr-test-user",
+            "password": "hr-test-password",
+        },
+    )
+    assert login.status_code == 200
+
+    response = client.post(
+        "/ask",
+        json={"question": "HR role propagation test"},
+        headers={
+            "Authorization": f"Bearer {login.json()['token']}"
+        },
+    )
+
+    assert response.status_code == 200
+    assert observed_roles == ["hr"]
