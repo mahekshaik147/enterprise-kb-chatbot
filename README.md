@@ -23,6 +23,22 @@ Things to try:
 - As HR, then as employee: "What are the salary bands or compensation details at TechNova?" HR gets an answer from the confidential document. Employee gets "I couldn't find that in the company documents."
 - Ask something the documents do not cover, such as a pet policy, to see the fallback response.
 
+## Screenshots
+
+In my own testing after the app had been idle, the login page appeared in about 25 seconds and the first question took about a minute while the model loaded. Later questions took a few seconds.
+
+### Login
+![Login page](docs/screenshots/login.png)
+
+### Employee: answer with source citation
+![Employee leave policy answer](docs/screenshots/employee-leave-policy.png)
+
+### Employee cannot access confidential HR data
+![Employee blocked from salary data](docs/screenshots/employee-salary-blocked.png)
+
+### HR can access the confidential salary document
+![HR salary answer with source](docs/screenshots/hr-salary-allowed.png)
+
 ## Features and architecture
 
 - `ingest.py` extracts PDF text and splits it into chunks with source, page, and access metadata.
